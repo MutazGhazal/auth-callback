@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -9,18 +9,24 @@
     .spinner { border: 4px solid #e0e0e0; border-top: 4px solid #2e7d32; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     a.btn { display: inline-block; margin-top: 16px; padding: 12px 24px; background: #2e7d32; color: #fff; border-radius: 8px; text-decoration: none; font-size: 16px; }
+    .small { color: #999; font-size: 12px; margin-top: 12px; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="spinner" id="spinner"></div>
     <div id="status">جاري تسجيل الدخول...</div>
+    <div id="buttons" style="display:none">
+      <a class="btn" id="openBtn" href="#">افتح التطبيق</a>
+      <p class="small">إذا لم يفتح، ارجع للتطبيق يدوياً</p>
+    </div>
   </div>
+  <iframe id="launcher" style="display:none"></iframe>
   <script>
     var params = window.location.search || '';
     var hash = window.location.hash || '';
-
     var callbackPath = 'login-callback' + params + hash;
+    var deepLink = 'com.example.prayer_time://' + callbackPath;
 
     var intentUrl = 'intent://' + callbackPath
       + '#Intent'
@@ -28,27 +34,34 @@
       + ';package=com.example.prayer_time'
       + ';end';
 
-    var directUrl = 'com.example.prayer_time://' + callbackPath;
-
     var isAndroid = /android/i.test(navigator.userAgent);
 
-    function tryOpen() {
-      if (isAndroid) {
-        window.location.href = intentUrl;
-      } else {
-        window.location.href = directUrl;
-      }
+    // Set button href
+    document.getElementById('openBtn').href = isAndroid ? intentUrl : deepLink;
 
+    // Try 1: iframe (works on many Android browsers)
+    try {
+      document.getElementById('launcher').src = deepLink;
+    } catch(e) {}
+
+    // Try 2: direct redirect after short delay
+    setTimeout(function() {
+      window.location.href = deepLink;
+    }, 500);
+
+    // Try 3: intent URL for Android after another delay
+    if (isAndroid) {
       setTimeout(function() {
-        document.getElementById('spinner').style.display = 'none';
-        document.getElementById('status').innerHTML =
-          'إذا لم يفتح التطبيق تلقائياً:<br>' +
-          '<a class="btn" href="' + (isAndroid ? intentUrl : directUrl) + '">افتح التطبيق</a>' +
-          '<br><br><small style="color:#999">أو ارجع للتطبيق يدوياً</small>';
-      }, 3000);
+        window.location.href = intentUrl;
+      }, 1500);
     }
 
-    tryOpen();
+    // Show button after 2.5 seconds as fallback
+    setTimeout(function() {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('status').textContent = 'اضغط الزر لفتح التطبيق:';
+      document.getElementById('buttons').style.display = 'block';
+    }, 2500);
   </script>
 </body>
 </html>
